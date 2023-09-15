@@ -1,0 +1,32 @@
+import sqlite3
+from scrap import get_index_data, get_redhal_data
+import datetime
+# connecting to the database
+currentDateTime = datetime.datetime.now()
+conn = sqlite3.connect(r'C:\Users\HP\OneDrive\Desktop\ex_rates.db')
+cursor = conn.cursor()
+cursor.execute("DROP TABLE IF EXISTS RATES")
+cursor.execute("""CREATE TABLE RATES (Currency, Currency_Code, Buy, Sell, Company_name, Date TIMESTAMP);""")
+df1 = get_redhal_data(url="https://www.redhaalansari.com/").to_sql('redhaalansari_rates', conn, if_exists='replace',
+                                                                   index=False)
+df2 = get_index_data(url="https://www.indexexchange.ae/exchange_rates").to_sql('index_rates', conn, if_exists='replace',
+                                                                               index=False)
+
+# to insert company_name column
+cursor.execute("""ALTER TABLE redhaalansari_rates ADD Company_name VARCHAR;""")
+cursor.execute("""UPDATE redhaalansari_rates SET Company_name = 'Redha Alansari Exchange';""")
+cursor.execute("""ALTER TABLE index_rates ADD Company_name VARCHAR;""")
+cursor.execute("""UPDATE index_rates SET Company_name = 'Index Exchange';""")
+
+# to insert datetime column
+cursor.execute("""ALTER TABLE redhaalansari_rates ADD Date TIMESTAMP;""")
+cursor.execute("""UPDATE redhaalansari_rates SET Date = 'currentDateTime';""")
+cursor.execute("""ALTER TABLE index_rates ADD Date TIMESTAMP;""")
+cursor.execute("""UPDATE index_rates SET Date = 'currentDateTime';""")
+
+# to convert data to RATES table
+cursor.execute("""INSERT INTO RATES SELECT * FROM redhaalansari_rates""")
+cursor.execute("""INSERT INTO RATES SELECT * FROM index_rates;""")
+
+conn.commit()
+conn.close()

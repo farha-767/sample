@@ -1,0 +1,110 @@
+"""
+fastapi swagger operations
+"""
+import shutil
+from pathlib import Path
+
+import uvicorn
+import pandas as pd
+from fastapi import FastAPI, Form, File, UploadFile
+from fastapi.responses import FileResponse
+import os
+from config import Baseconfig
+
+app = FastAPI()
+
+#sum operation
+@app.get('/SUM')
+def my_function(firstnum: int, secondnum: int):
+    """
+
+    :param firstnum:
+    :param secondnum:
+    :return:sum
+    """
+    sum = firstnum + secondnum;
+    return sum
+
+#hello world
+@app.get("/HELLO WORLD")
+def read_root():
+    """
+
+    :return:
+    """
+    return {"Hello": "World"}
+	
+#read excel file
+@app.get("/PATH")
+async def my_function(path: str):
+    df = pd.read_excel(path, header=None)
+    df = df.fillna('')
+    return df
+
+#form
+@app.post("/login/")
+async def login(username: str = Form(), password: str = Form(), age: int = Form()):
+    return {"username": username, "password": password, "age": age}
+	
+#create an item
+@app.post("/items/", status_code=201)
+async def create_item(name: str):
+    """
+    
+    :param name:
+    :return:
+    """
+    return {"name": name}
+	
+#create file
+@app.post("/files/")
+async def create_file(file: bytes = File(), file2: UploadFile = File(), token: str = Form()):
+    """
+
+    :param file:
+    :param file2:
+    :param token:
+    :return:
+    """
+    return {
+        "file_size": len(file),
+        "token": token,
+        "file2_content_type": file2.content_type,
+    }
+	
+#download file
+@app.get("/download-file")
+def download_file(file_name: str):
+    """
+
+    :param file_name:
+    :return:
+    """
+    file_location = f'{Baseconfig.folder_path}{os.sep}{file_name}.xlsx'
+    return FileResponse(file_location, media_type='application/octet-stream', filename=file_name)
+
+
+
+#Upload file
+@app.post("/upload-file")
+async def create_upload_file(Upload_file: UploadFile):
+    """
+
+    :param Upload_file:
+    :return:
+    """
+    destination_folder = r"C:\Users\HP\Desktop\ff"
+    FILE = f'{destination_folder}{os.sep}{Upload_file.filename}'
+    try:
+        destination = Path(FILE)
+        with destination.open("wb") as buffer:# wb to write and rb to read,
+            shutil.copyfileobj(Upload_file.file, buffer)
+    finally:
+        Upload_file.file.close()
+        return True
+
+uvicorn.run(app, port=7090)
+
+
+
+
